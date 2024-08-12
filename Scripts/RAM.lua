@@ -11,6 +11,25 @@ RAM.colorHighlight = sm.color.new(0x4A4A4Aff)
 
 dofile("interface_controller.lua")
 
+-- allows other mods to read the data in a Ram Block
+local ramBlocks = {}
+sm.QuickLogic = {}
+---Returns the memory held in a Quick Ram Block.
+---@param id number The interactable id of a Ram Block.
+---@return table
+sm.QuickLogic.GetRamBlockMemory = function(id)
+    -- id exists
+    if ramBlocks[id] == nil or not sm.exists(ramBlocks[id].shape) then
+        return nil
+    end
+    -- copy ram table because lua passes by reference
+    local mem = {}
+    for k, v in pairs(ramBlocks[id].memory) do
+        mem[k] = v
+    end
+    return mem
+end
+
 --[[ client ]]
 function RAM.client_onCreate(self )
 end
@@ -78,6 +97,7 @@ function RAM.partFunction(self, inputvalues)
 end
 
 function RAM.server_onCreate(self )
+    ramBlocks[self.interactable.id] = self
     if self.storage:load() ~= nil then
         self.memory = self.storage:load().memory
     else
@@ -115,5 +135,6 @@ function RAM.server_onFixedUpdate(self, deltaTime )
 end
 
 function RAM.server_onDestroy(self )
+    ramBlocks[self.interactable.id] = nil
     interface_signin(self, "RAM", RAM.partFunction, self.colors, false)
 end
